@@ -12,12 +12,12 @@ steps:
   - id: terraform-init
     name: gcr.io/${PROJECT_ID}/terraform
     env: [CLOUDSDK_CORE_PROJECT=arikkfir, GOOGLE_CREDENTIALS=./deployer-sa-key.json, "TF_VAR_env=${BRANCH_NAME}"]
-    args: [init, -lock-timeout=30s, -backend-config=prefix=env/${BRANCH_NAME}]
+    args: [init, -lock-timeout=30s, "-backend-config=prefix=env/${BRANCH_NAME}"]
     waitFor: [decrypt-secrets]
 
   - id: terraform-apply
     name: gcr.io/${PROJECT_ID}/terraform
-    env: [CLOUDSDK_CORE_PROJECT=arikkfir, GOOGLE_CREDENTIALS=./deployer-sa-key.json, TF_VAR_env=${BRANCH_NAME}]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, GOOGLE_CREDENTIALS=./deployer-sa-key.json, "TF_VAR_env=${BRANCH_NAME}"]
     args: [apply, -lock-timeout=30s, -auto-approve]
     waitFor: [terraform-init]
 
