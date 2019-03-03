@@ -45,6 +45,12 @@ variable "gcp_project_apis" {
 }
 
 // Providers
+provider "local" {
+  version = "~> 1.1"
+}
+provider "template" {
+  version = "~> 2.1"
+}
 provider "google" {
   version = "~> 2.0.0"
 }
