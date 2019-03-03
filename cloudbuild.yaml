@@ -6,7 +6,7 @@ steps:
 
   - id: decrypt-secrets
     name: gcr.io/cloud-builders/gcloud
-    entrypoint: decrypt-secrets.sh
+    entrypoint: ./decrypt-secrets.sh
     waitFor: [-]
 
   - id: terraform-init
