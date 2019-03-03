@@ -215,9 +215,6 @@ spec:
         component: adapter
     spec:
       securityContext:
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop: ["all"]
         runAsNonRoot: true
         runAsUser: 10001
       serviceAccountName: prometheus
