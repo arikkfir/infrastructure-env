@@ -30,7 +30,7 @@ steps:
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
     env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./environments/kubernetes/administrators.yaml]
-    waitFor: [preprocess-resources, terraform-apply, switch-service-account]
+    waitFor: [preprocess-resources, terraform-apply]
 
   - id: setup-storage-classes
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
