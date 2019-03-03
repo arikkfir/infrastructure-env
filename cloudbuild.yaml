@@ -1,6 +1,5 @@
 timeout: 1800s
 substitutions:
-  _REGION: europe-west1
   _ZONE: europe-west1-b
 steps:
 
