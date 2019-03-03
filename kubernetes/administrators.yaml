@@ -25,5 +25,5 @@ subjects:
 
   # Grant permissions to the system deployer (GCP service account)
   - kind: User
-    name: deployer@kfirs-shared.iam.gserviceaccount.com
+    name: deployer@arikkfir.iam.gserviceaccount.com
 ---
