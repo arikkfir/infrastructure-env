@@ -1,0 +1,5 @@
+/.terraform
+/.env
+/*.tfvars
+/deployer-sa-key.json
+/github_access_token

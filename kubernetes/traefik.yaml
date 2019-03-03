@@ -1,0 +1,287 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: traefik
+  labels:
+    app: traefik
+    component: rbac
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+      - ingresses/status
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: traefik
+  labels:
+    app: traefik
+    component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik
+subjects:
+  - kind: ServiceAccount
+    name: traefik
+    namespace: traefik
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: traefik
+  labels:
+    app: traefik
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: traefik
+  name: traefik
+  labels:
+    app: traefik
+    component: rbac
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: traefik
+  name: config
+  labels:
+    app: traefik
+    component: server
+data:
+  traefik.toml: |
+    # TODO: keepTrailingSlash = true
+    logLevel = "INFO"
+    defaultEntryPoints = ["http", "https"]
+
+    [entryPoints]
+
+      [entryPoints.http]
+      address = ":80"
+      compress = true
+
+    # TODO:    [entryPoints.http.forwardedHeaders]
+    # TODO:    trustedIPs = ["127.0.0.1/32", "192.168.1.7"]
+
+      [entryPoints.https]
+      address = ":443"
+      compress = true
+
+        [entryPoints.https.tls]
+        sniStrict = true
+        minVersion = "VersionTLS12"
+        cipherSuites = [
+          "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+          "TLS_RSA_WITH_AES_256_GCM_SHA384"
+        ]
+
+    # TODO:    [entryPoints.https.forwardedHeaders]
+    # TODO:    trustedIPs = ["127.0.0.1/32", "192.168.1.7"]
+
+      [entryPoints.admin]
+      address = ":8080"
+      compress = true
+
+    # TODO:    [entryPoints.https.forwardedHeaders]
+    # TODO:    trustedIPs = ["127.0.0.1/32", "192.168.1.7"]
+
+    [kubernetes]
+      [kubernetes.ingressEndpoint]
+      publishedService = "traefik/server"
+
+    [traefikLog]
+    format = "json"
+
+    [accessLog]
+    format = "json"
+    bufferingSize = 0
+
+      [accessLog.fields]
+      defaultMode = "keep"
+
+        [accessLog.fields.headers]
+        defaultMode = "keep"
+
+    [api]
+    entryPoint = "admin"
+    dashboard = true
+      [api.statistics]
+        recentErrors = 10
+
+    [metrics]
+      [metrics.prometheus]
+      entryPoint = "admin"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: traefik
+  name: server
+  labels:
+    app: traefik
+    component: server
+spec:
+  type: LoadBalancer
+  loadBalancerIP: "${GKE_CLUSTER_IP_ADDR}"
+  externalTrafficPolicy: Local
+  selector:
+    app: traefik
+    component: server
+  ports:
+    - protocol: TCP
+      name: http
+      port: 80
+      targetPort: http
+    - protocol: TCP
+      name: https
+      port: 443
+      targetPort: https
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: traefik
+  name: admin
+  labels:
+    app: traefik
+    component: server
+spec:
+  selector:
+    app: traefik
+    component: server
+  ports:
+    - name: admin
+      port: 80
+      targetPort: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  namespace: traefik
+  name: server
+  labels:
+    app: traefik
+    component: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik
+      component: server
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+      labels:
+        app: traefik
+        component: server
+    spec:
+      serviceAccountName: traefik
+      containers:
+        - name: server
+          image: traefik:1.7.9
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+            - name: admin
+              containerPort: 8080
+          args:
+            - --configfile=/config/traefik.toml
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      terminationGracePeriodSeconds: 60
+      volumes:
+        - name: config
+          configMap:
+            name: config
+            optional: false
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: traefik
+  name: admin
+  annotations:
+      traefik.ingress.kubernetes.io/whitelist-source-range: "${WHITELISTED_CIDR}"
+  labels:
+    app: traefik
+    component: server
+spec:
+  rules:
+    - host: traefik.${GKE_CLUSTER_NAME}.kfirs.com
+      http:
+        paths:
+          - backend:
+              serviceName: admin
+              servicePort: admin
+  tls:
+    - hosts:
+        - traefik.${GKE_CLUSTER_NAME}.kfirs.com
+      secretName: admin-crt
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  namespace: traefik
+  name: admin-crt
+  labels:
+    app: traefik
+    component: server
+spec:
+  secretName: admin-crt
+  issuerRef:
+    kind: ClusterIssuer
+    name: cluster-issuer
+  commonName: traefik.${GKE_CLUSTER_NAME}.kfirs.com
+  dnsNames:
+    - traefik.${GKE_CLUSTER_NAME}.kfirs.com
+  acme:
+    config:
+      - dns01:
+          provider: cloudflare
+        domains:
+          - traefik.${GKE_CLUSTER_NAME}.kfirs.com
+---
+# TODO: enable Traefik autoscaler
+#apiVersion: autoscaling/v2beta1
+#kind: HorizontalPodAutoscaler
+#metadata:
+#  namespace: traefik
+#  name: server
+#spec:
+#  scaleTargetRef:
+#    apiVersion: apps/v1
+#    kind: Deployment
+#    name: server
+#  minReplicas: 1
+#  maxReplicas: 3
+#  metrics:
+#    - type: Pods
+#      pods:
+#        metricName: traefik_entrypoint_requests_per_second
+#        targetAverageValue: 1k
