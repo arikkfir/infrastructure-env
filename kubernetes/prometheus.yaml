@@ -145,4 +145,3 @@ spec:
     - hosts:
         - prometheus.${GKE_CLUSTER_NAME}.kfirs.com
       secretName: server-crt
-w
