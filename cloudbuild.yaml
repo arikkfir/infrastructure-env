@@ -12,7 +12,7 @@ steps:
   - id: switch-service-account
     name: gcr.io/cloud-builders/gcloud
     args: [auth, activate-service-account, --key-file=./deployer-sa-key.json]
-    waitFor: [decrypt-sa-key]
+    waitFor: [decrypt-secrets]
 
   - id: terraform-init
     name: gcr.io/${PROJECT_ID}/terraform
