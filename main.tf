@@ -74,8 +74,10 @@ resource "google_project" "env" {
   billing_account = "${var.gcp_billing_account_id}"
 }
 resource "google_compute_project_metadata_item" "deployment_timestamp" {
-  key   = "deployment_timestamp"
-  value = "${timestamp()}"
+  provider = "google-beta"
+  project  = "${google_project.env.project_id}"
+  key      = "deployment_timestamp"
+  value    = "${timestamp()}"
   lifecycle {
     ignore_changes = [
       "value"
