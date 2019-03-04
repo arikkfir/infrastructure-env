@@ -1,0 +1,5 @@
+_extends: .github
+repository:
+  name: infrastructure-env
+  description: Environmental Infrastructure-as-Code repository for the KFIRs project.
+  topics: iac, infrastructure, terraform, kfirs
