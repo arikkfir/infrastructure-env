@@ -73,6 +73,15 @@ resource "google_project" "env" {
   org_id          = "${var.gcp_org_id}"
   billing_account = "${var.gcp_billing_account_id}"
 }
+resource "google_compute_project_metadata_item" "deployment_timestamp" {
+  key   = "deployment_timestamp"
+  value = "${timestamp()}"
+  lifecycle {
+    ignore_changes = [
+      "value"
+    ]
+  }
+}
 resource "google_project_service" "arikkfir_apis" {
   count                      = "${length(var.gcp_project_apis)}"
   provider                   = "google-beta"
