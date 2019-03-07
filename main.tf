@@ -8,7 +8,7 @@ terraform {
 
 // Environment being set up
 variable "env" {}
-variable "gcp_folder_id" {}
+variable "gcp_org_id" {}
 variable "gcp_billing_account_id" {}
 variable "region" {}
 variable "zone" {}
@@ -64,14 +64,14 @@ provider "cloudflare" {
 }
 
 // Setup GCP project
-data "google_project" "arikkfir" {
-  project_id = "arikkfir"
-}
 resource "google_project" "env" {
   project_id      = "arikkfir-env-${var.env}"
   name            = "arikkfir-env-${var.env}"
-  folder_id       = "${var.gcp_folder_id}"
+  org_id          = "${var.gcp_org_id}"
   billing_account = "${var.gcp_billing_account_id}"
+  labels {
+    "env" = "${var.env}"
+  }
 }
 resource "google_compute_project_metadata_item" "deployment_timestamp" {
   provider = "google-beta"
@@ -83,14 +83,6 @@ resource "google_compute_project_metadata_item" "deployment_timestamp" {
       "value"
     ]
   }
-}
-resource "google_project_service" "arikkfir_apis" {
-  count                      = "${length(var.gcp_project_apis)}"
-  provider                   = "google-beta"
-  project                    = "${data.google_project.arikkfir.project_id}"
-  service                    = "${var.gcp_project_apis[count.index]}"
-  disable_dependent_services = false
-  disable_on_destroy         = false
 }
 resource "google_project_service" "env_apis" {
   count                      = "${length(var.gcp_project_apis)}"
