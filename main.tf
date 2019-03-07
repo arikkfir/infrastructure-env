@@ -69,7 +69,7 @@ data "google_project" "arikkfir" {
 }
 resource "google_project" "env" {
   project_id      = "arikkfir-env-${var.env}"
-  name            = "${var.env}"
+  name            = "arikkfir-env-${var.env}"
   folder_id       = "${var.gcp_folder_id}"
   billing_account = "${var.gcp_billing_account_id}"
 }
