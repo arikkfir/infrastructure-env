@@ -65,8 +65,8 @@ provider "cloudflare" {
 
 // Setup GCP project
 resource "google_project" "env" {
-  project_id      = "arikkfir-env-${var.env}"
-  name            = "arikkfir-env-${var.env}"
+  project_id      = "ak-env-${var.env}"
+  name            = "ak-env-${var.env}"
   org_id          = "${var.gcp_org_id}"
   billing_account = "${var.gcp_billing_account_id}"
   labels {
