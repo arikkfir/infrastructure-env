@@ -8,8 +8,6 @@ terraform {
 
 // Environment being set up
 variable "env" {}
-variable "gcp_org_id" {}
-variable "gcp_billing_account_id" {}
 variable "region" {}
 variable "zone" {}
 
@@ -21,7 +19,9 @@ variable "cloudflare_token" {}
 variable "gke_admin" {}
 variable "gke_master_password" {}
 variable "gke_master_username" {}
-variable "gke_version" {}
+variable "gke_version" {
+  default = "1.11.7-gke.6"
+}
 
 // Security
 variable "ip_address_whitelist" {
@@ -41,7 +41,17 @@ variable "kubewatch_slack_token" {}
 
 // Required GCP APIs
 variable "gcp_project_apis" {
-  type = "list"
+  type    = "list"
+  default = [
+    "cloudbilling.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "cloudfunctions.googleapis.com",
+    "compute.googleapis.com",
+    "container.googleapis.com",
+    "containerregistry.googleapis.com",
+    "iam.googleapis.com",
+    "pubsub.googleapis.com"
+  ]
 }
 
 // Providers
@@ -57,6 +67,9 @@ provider "google" {
 provider "google-beta" {
   version = "~> 2.0.0"
 }
+data "google_project" "arikkfir" {
+  provider = "google-beta"
+}
 provider "cloudflare" {
   version = "~> 1.11"
   email   = "${var.cloudflare_email}"
@@ -64,45 +77,22 @@ provider "cloudflare" {
 }
 
 // Setup GCP project
-resource "google_project" "env" {
-  project_id      = "ak-env-${var.env}"
-  name            = "ak-env-${var.env}"
-  org_id          = "${var.gcp_org_id}"
-  billing_account = "${var.gcp_billing_account_id}"
-  labels {
-    "env" = "${var.env}"
-  }
-}
-resource "google_compute_project_metadata_item" "deployment_timestamp" {
-  provider = "google-beta"
-  project  = "${google_project.env.project_id}"
-  key      = "deployment_timestamp"
-  value    = "${timestamp()}"
-  lifecycle {
-    ignore_changes = [
-      "value"
-    ]
-  }
-}
-resource "google_project_service" "env_apis" {
+resource "google_project_service" "apis" {
   count                      = "${length(var.gcp_project_apis)}"
   provider                   = "google-beta"
-  project                    = "${google_project.env.project_id}"
   service                    = "${var.gcp_project_apis[count.index]}"
   disable_dependent_services = false
   disable_on_destroy         = false
 }
 
-// VPC network
+// VPC
 resource "google_compute_network" "net" {
   provider                = "google-beta"
-  project                 = "${google_project.env.project_id}"
   name                    = "${var.env}"
   auto_create_subnetworks = false
 }
 resource "google_compute_subnetwork" "subnet" {
   provider           = "google-beta"
-  project            = "${google_project.env.project_id}"
   name               = "${var.region}"
   ip_cidr_range      = "10.128.0.0/16"
   region             = "${var.region}"
@@ -118,11 +108,8 @@ resource "google_compute_subnetwork" "subnet" {
     }
   ]
 }
-
-// VPC firewall
 resource "google_compute_firewall" "net-allow-privileged" {
   provider  = "google-beta"
-  project   = "${google_project.env.project_id}"
   name      = "${google_compute_network.net.name}-allow-privileged"
   network   = "${google_compute_network.net.name}"
   direction = "INGRESS"
@@ -144,7 +131,6 @@ resource "google_compute_firewall" "net-allow-privileged" {
 // Cluster
 resource "google_compute_address" "cluster_ip" {
   provider     = "google-beta"
-  project      = "${google_project.env.project_id}"
   name         = "gke-${var.env}-lb"
   address_type = "EXTERNAL"
   network_tier = "PREMIUM"
@@ -152,10 +138,9 @@ resource "google_compute_address" "cluster_ip" {
 }
 resource "google_container_cluster" "cluster" {
   depends_on = [
-    "google_project_service.env_apis"
+    "google_project_service.apis"
   ]
   provider   = "google-beta"
-  project    = "${google_project.env.project_id}"
   name       = "${var.env}"
   zone       = "${var.zone}"
 
@@ -220,7 +205,6 @@ resource "google_container_cluster" "cluster" {
 }
 resource "google_container_node_pool" "main" {
   provider           = "google-beta"
-  project            = "${google_project.env.project_id}"
   name               = "main"
   zone               = "${google_container_cluster.cluster.zone}"
   cluster            = "${google_container_cluster.cluster.name}"
