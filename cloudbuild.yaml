@@ -32,19 +32,19 @@ steps:
 
   - id: setup-admins
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/administrators.yaml]
     waitFor: [preprocess-resources, terraform-apply, switch-service-account]
 
   - id: setup-storage-classes
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/storage.yaml]
     waitFor: [setup-admins]
 
   - id: setup-cert-manager-crds
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply,
            -f, "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/00-crds.yaml",
            -f, "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/01-namespace.yaml"]
@@ -52,25 +52,25 @@ steps:
 
   - id: setup-cert-manager-deployment
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, --validate=false, -f, "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/cert-manager.yaml"]
     waitFor: [setup-cert-manager-crds]
 
   - id: cert-manager-deployed
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [wait, --timeout=5m, --namespace=cert-manager, --for=condition=Available, deploy/cert-manager, deploy/cert-manager-webhook]
     waitFor: [setup-cert-manager-deployment]
 
   - id: setup-cert-manager-issuer
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/cert-manager-issuers.yaml]
     waitFor: [cert-manager-deployed]
 
   - id: setup-prometheus
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply,
            -f, ./kubernetes/prometheus.yaml,
            -f, ./kubernetes/prometheus-adapter.yaml,
@@ -81,56 +81,56 @@ steps:
 
   - id: prometheus-deployed
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [wait, --timeout=15m, --namespace=prometheus, --for=condition=Available, deploy/alertmanager, deploy/pushgateway, deploy/server]
     waitFor: [setup-prometheus]
 
   - id: setup-traefik
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/traefik.yaml]
     waitFor: [setup-cert-manager-issuer]
 
   - id: traefik-deployed
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [wait, --timeout=5m, --namespace=traefik, --for=condition=Available, deploy/server]
     waitFor: [setup-traefik]
 
   - id: setup-grafana
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/grafana.yaml]
     waitFor: [setup-cert-manager-issuer]
 
   - id: grafana-deployed
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [wait, --timeout=15m, --namespace=grafana, --for=condition=Available, deploy/server]
     waitFor: [setup-grafana]
 
   - id: update-grafana-dashboards
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
     dir: grafana
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     entrypoint: bash
     args: ["-c", "sleep 5; kubectl create configmap dashboards --save-config -n=grafana --from-file=./dashboards --dry-run -o=yaml | kubectl apply -f -"]
     waitFor: [setup-grafana]
 
   - id: setup-node-exporter
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/node-exporter.yaml]
     waitFor: [setup-admins]
 
   - id: setup-kube-state-metrics
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/kube-state-metrics.yaml]
     waitFor: [setup-admins]
 
   - id: setup-kubewatch
     name: gcr.io/${PROJECT_ID}/kubectl-upgraded
-    env: ["CLOUDSDK_CORE_PROJECT=arikkfir-env-${BRANCH_NAME}", "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
+    env: [CLOUDSDK_CORE_PROJECT=arikkfir, "CLOUDSDK_COMPUTE_ZONE=${_ZONE}", "CLOUDSDK_CONTAINER_CLUSTER=${BRANCH_NAME}"]
     args: [apply, -f, ./kubernetes/kubewatch.yaml]
     waitFor: [setup-admins]
