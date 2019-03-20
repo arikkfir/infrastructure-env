@@ -9,3 +9,7 @@ output "cluster_api_address" {
 output "cluster_ingress_address" {
   value = "${google_compute_address.main.address}"
 }
+
+output "path" {
+  value = "${path.module}"
+}
