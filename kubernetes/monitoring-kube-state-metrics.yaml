@@ -1,11 +1,15 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-state-metrics
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
-  namespace: kube-system
+  namespace: kube-state-metrics
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
-    component: rbac
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
@@ -13,118 +17,113 @@ metadata:
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
-    component: rbac
 rules:
   - apiGroups: [""]
     resources:
       - configmaps
-    verbs: ["list", "watch"]
-  - apiGroups: ["batch"]
+    verbs: [list, watch]
+  - apiGroups: [batch]
     resources:
       - cronjobs
-    verbs: ["list", "watch"]
-  - apiGroups: ["extensions"]
+    verbs: [list, watch]
+  - apiGroups: [extensions]
     resources:
       - daemonsets
-    verbs: ["list", "watch"]
-  - apiGroups: ["extensions"]
+    verbs: [list, watch]
+  - apiGroups: [extensions]
     resources:
       - deployments
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - endpoints
-    verbs: ["list", "watch"]
-  - apiGroups: ["autoscaling"]
+    verbs: [list, watch]
+  - apiGroups: [autoscaling]
     resources:
       - horizontalpodautoscalers
-    verbs: ["list", "watch"]
-  - apiGroups: ["batch"]
+    verbs: [list, watch]
+  - apiGroups: [batch]
     resources:
       - jobs
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - limitranges
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - namespaces
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - nodes
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - persistentvolumeclaims
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - persistentvolumes
-    verbs: ["list", "watch"]
-  - apiGroups: ["policy"]
+    verbs: [list, watch]
+  - apiGroups: [policy]
     resources:
       - poddisruptionbudgets
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - pods
-    verbs: ["list", "watch"]
-  - apiGroups: ["extensions"]
+    verbs: [list, watch]
+  - apiGroups: [extensions]
     resources:
       - replicasets
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - replicationcontrollers
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - resourcequotas
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - secrets
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
   - apiGroups: [""]
     resources:
       - services
-    verbs: ["list", "watch"]
-  - apiGroups: ["apps"]
+    verbs: [list, watch]
+  - apiGroups: [apps]
     resources:
       - statefulsets
-    verbs: ["list", "watch"]
+    verbs: [list, watch]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  namespace: kube-system
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
-    component: exporter
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kube-state-metrics
 subjects:
   - kind: ServiceAccount
-    namespace: kube-system
     name: kube-state-metrics
+    namespace: kube-state-metrics
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: kube-system
+  namespace: kube-state-metrics
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
-    component: exporter
   annotations:
     prometheus.io/scrape: "true"
 spec:
-  type: ClusterIP
   ports:
     - name: metrics
       port: 8080
@@ -132,21 +131,18 @@ spec:
       targetPort: 8080
   selector:
     app: kube-state-metrics
-    component: exporter
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: kube-system
+  namespace: kube-state-metrics
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
-    component: exporter
 spec:
   selector:
     matchLabels:
       app: kube-state-metrics
-      component: exporter
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
@@ -155,7 +151,6 @@ spec:
     metadata:
       labels:
         app: kube-state-metrics
-        component: exporter
     spec:
       serviceAccountName: kube-state-metrics
       securityContext:
@@ -164,7 +159,6 @@ spec:
       containers:
         - name: kube-state-metrics
           image: k8s.gcr.io/kube-state-metrics:v1.5.0
-          imagePullPolicy: IfNotPresent
           args:
             - --collectors=configmaps
             - --collectors=cronjobs
@@ -204,3 +198,4 @@ spec:
             limits:
               cpu: 200m
               memory: 48Mi
+---

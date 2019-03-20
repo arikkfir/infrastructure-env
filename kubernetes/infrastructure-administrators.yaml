@@ -7,12 +7,8 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-
-  # Grant permissions to administrator
   - kind: User
-    name: ${ADMIN_USR}
-
-  # Grant permissions to the system deployer (GCP service account)
+    name: arik@kfirfamily.com
   - kind: User
     name: deployer@arikkfir.iam.gserviceaccount.com
 ---
