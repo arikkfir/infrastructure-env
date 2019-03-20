@@ -14,7 +14,6 @@
 set -eu -o pipefail
 
 # Apply infrastructure & administration permissions
-gcloud container clusters get-credentials --zone=europe-west1-b ${ENV_NAME}
 kubectl apply -f ./infrastructure-administrators.yaml
 kubectl apply -f ./infrastructure-storage.yaml
 
