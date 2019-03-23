@@ -127,6 +127,15 @@ resource "cloudflare_record" "cluster" {
   proxied = false
 }
 
+resource "cloudflare_record" "alertmanager" {
+  domain  = "kfirs.com"
+  name    = "alertmanager.${var.name}.kfirs.com"
+  type    = "CNAME"
+  value   = "${cloudflare_record.cluster.name}"
+  ttl     = 1
+  proxied = false
+}
+
 resource "cloudflare_record" "prometheus" {
   domain  = "kfirs.com"
   name    = "prometheus.${var.name}.kfirs.com"
