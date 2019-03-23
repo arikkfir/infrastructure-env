@@ -28,12 +28,6 @@ cat ./cert-manager-issuer.yaml | envsubst | kubectl apply -f -
 # Collect metrics from cluster objects
 kubectl apply -f ./monitoring-kube-state-metrics.yaml
 
-# Alert on important Kubernetes events
-kubectl apply -f ./monitoring-kubewatch.yaml
-cat ./monitoring-kubewatch-config-template.yaml | envsubst > ./monitoring-kubewatch-config.yaml
-kubectl create configmap config --namespace=kubewatch --from-file=.kubewatch.yaml=monitoring-kubewatch-config.yaml --dry-run=true --output=yaml | kubectl apply -f -
-kubectl wait --timeout=5m --namespace=kubewatch --for=condition=Available deploy/kubewatch
-
 # Export node metrics
 kubectl apply -f ./monitoring-node-exporter.yaml
 
