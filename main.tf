@@ -117,7 +117,6 @@ resource "google_container_node_pool" "main" {
     }
   }
 }
-
 resource "cloudflare_record" "cluster" {
   domain  = "kfirs.com"
   name    = "cluster.${var.name}.kfirs.com"
@@ -126,7 +125,6 @@ resource "cloudflare_record" "cluster" {
   ttl     = 1
   proxied = false
 }
-
 resource "cloudflare_record" "alertmanager" {
   domain  = "kfirs.com"
   name    = "alertmanager.${var.name}.kfirs.com"
@@ -135,7 +133,6 @@ resource "cloudflare_record" "alertmanager" {
   ttl     = 1
   proxied = false
 }
-
 resource "cloudflare_record" "prometheus" {
   domain  = "kfirs.com"
   name    = "prometheus.${var.name}.kfirs.com"
@@ -144,7 +141,6 @@ resource "cloudflare_record" "prometheus" {
   ttl     = 1
   proxied = false
 }
-
 resource "cloudflare_record" "traefik" {
   domain  = "kfirs.com"
   name    = "traefik.${var.name}.kfirs.com"
