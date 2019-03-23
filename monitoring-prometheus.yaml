@@ -325,7 +325,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/redirect-entry-point: https
     traefik.ingress.kubernetes.io/redirect-permanent: "true"
-    traefik.ingress.kubernetes.io/whitelist-source-range: "84.228.10.109/32,31.168.217.84/32,31.168.11.138/32,46.19.85.220/32"
+    traefik.ingress.kubernetes.io/whitelist-source-range: "${WHITELISTED_IP_CIDRS}"
 spec:
   rules:
     - host: prometheus.${ENV_NAME}.kfirs.com
