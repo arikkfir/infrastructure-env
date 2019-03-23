@@ -1,12 +1,7 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: kube-state-metrics
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
-  namespace: kube-state-metrics
+  namespace: kube-system
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
@@ -117,7 +112,7 @@ subjects:
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: kube-state-metrics
+  namespace: kube-system
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
@@ -135,7 +130,7 @@ spec:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: kube-state-metrics
+  namespace: kube-system
   name: kube-state-metrics
   labels:
     app: kube-state-metrics
@@ -152,6 +147,7 @@ spec:
       labels:
         app: kube-state-metrics
     spec:
+      priorityClassName: system-cluster-critical
       serviceAccountName: kube-state-metrics
       securityContext:
         runAsUser: 65534
