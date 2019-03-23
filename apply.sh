@@ -10,6 +10,12 @@
 [[ -z "${KUBEWATCH_SLACK_TOKEN}" ]] && echo "environment variable 'KUBEWATCH_SLACK_TOKEN' missing" >&2 && exit 1
 [[ -z "${WHITELISTED_IP_CIDRS}" ]] && echo "environment variable 'WHITELISTED_IP_CIDRS' missing" >&2 && exit 1
 
+function create_config() {
+    NAMESPACE=${1}
+    NAME=${2}
+    kubectl create configmap ${NAME} --dry-run=true --output=yaml --namespace=${NAMESPACE} $@ | kubectl apply -f -
+}
+
 # Configure bash to exit on error
 set -eu -o pipefail
 
@@ -21,29 +27,27 @@ kubectl apply -f ./infrastructure-storage.yaml
 kubectl apply \
     -f "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/00-crds.yaml" \
     -f "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/01-namespace.yaml"
-kubectl apply --validate=false -f "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/cert-manager.yaml"
+kubectl apply \
+    --validate=false \
+    -f "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/cert-manager.yaml"
 kubectl wait --timeout=5m --namespace=cert-manager --for=condition=Available deploy/cert-manager deploy/cert-manager-webhook
 cat ./cert-manager-issuer.yaml | envsubst | kubectl apply -f -
 
-# Collect metrics from cluster objects
+# Collect metrics from nodes & objects
 kubectl apply -f ./monitoring-kube-state-metrics.yaml
-
-# Alert on important Kubernetes events
-kubectl apply -f ./monitoring-kubewatch.yaml
-cat ./monitoring-kubewatch-config-template.yaml | envsubst > ./monitoring-kubewatch-config.yaml
-kubectl create configmap config --namespace=kubewatch --from-file=.kubewatch.yaml=monitoring-kubewatch-config.yaml --dry-run=true --output=yaml | kubectl apply -f -
-kubectl wait --timeout=5m --namespace=kubewatch --for=condition=Available deploy/kubewatch
 
 # Export node metrics
 kubectl apply -f ./monitoring-node-exporter.yaml
 
 # Setup Prometheus
+cat monitoring-prometheus-alertmanager-config-template.yml | envsubst > monitoring-prometheus-alertmanager-config.yml
 cat ./monitoring-prometheus.yaml | envsubst | kubectl apply -f -
-kubectl create configmap server --namespace=prometheus --from-file=prometheus.yml=monitoring-prometheus-config.yaml --dry-run=true --output=yaml | kubectl apply -f -
-kubectl create configmap adapter --namespace=prometheus --from-file=adapter.yml=monitoring-prometheus-adapter-config.yaml --dry-run=true --output=yaml | kubectl apply -f -
-kubectl wait --timeout=5m --namespace=prometheus --for=condition=Available deploy/server deploy/adapter deploy/pushgateway
+create_config prometheus server --from-file=prometheus.yml=monitoring-prometheus-config.yaml
+create_config prometheus adapter --from-file=adapter.yml=monitoring-prometheus-adapter-config.yaml
+create_config prometheus alertmanager --from-file=alertmanager.yml=monitoring-prometheus-alertmanager-config.yml
+kubectl wait --timeout=5m --namespace=prometheus --for=condition=Available deploy/server deploy/adapter deploy/pushgateway deploy/alertmanager
 
 # Setup Traefik
 cat ./traefik.yaml | envsubst | kubectl apply -f -
-kubectl create configmap config --namespace=traefik --from-file=traefik.toml=traefik-config.toml --dry-run=true --output=yaml | kubectl apply -f -
+create_config traefik config --from-file=traefik.toml=traefik-config.toml
 kubectl wait --timeout=5m --namespace=traefik --for=condition=Available deploy/traefik
