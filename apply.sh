@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Verify environment is provided
+[[ -z "${ALERTMANAGER_SLACK_URL}" ]] && echo "environment variable 'ALERTMANAGER_SLACK_URL' missing" >&2 && exit 1
 [[ -z "${CLOUDFLARE_EMAIL}" ]] && echo "environment variable 'CLOUDFLARE_EMAIL' missing" >&2 && exit 1
 [[ -z "${CLOUDFLARE_TOKEN}" ]] && echo "environment variable 'CLOUDFLARE_TOKEN' missing" >&2 && exit 1
 [[ -z "${CLUSTER_INGRESS_ADDRESS}" ]] && echo "environment variable 'CLUSTER_INGRESS_ADDRESS' missing" >&2 && exit 1
