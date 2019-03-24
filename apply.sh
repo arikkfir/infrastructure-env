@@ -14,6 +14,7 @@
 function create_config() {
     NAMESPACE=${1}
     NAME=${2}
+    shift 2
     kubectl create configmap ${NAME} --dry-run=true --output=yaml --namespace=${NAMESPACE} $@ | kubectl apply -f -
 }
 
