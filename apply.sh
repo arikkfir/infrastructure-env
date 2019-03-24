@@ -17,27 +17,22 @@ function create_config() {
     kubectl create configmap ${NAME} --dry-run=true --output=yaml --namespace=${NAMESPACE} $@ | kubectl apply -f -
 }
 
-# Configure bash to exit on error
+# init
 set -eu -o pipefail
+export CM_BASE="https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests"
 
-# Apply infrastructure & administration permissions
+# infrastructure
 kubectl apply -f ./infrastructure-administrators.yaml
 kubectl apply -f ./infrastructure-storage.yaml
 
-# Deploy cert-manager for integrating Let's Encrypt
-kubectl apply \
-    -f "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/00-crds.yaml" \
-    -f "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/01-namespace.yaml"
-kubectl apply \
-    --validate=false \
-    -f "https://raw.githubusercontent.com/jetstack/cert-manager/v0.6.2/deploy/manifests/cert-manager.yaml"
+# cert-manager
+kubectl apply -f "${CM_BASE}/00-crds.yaml" -f "${CM_BASE}/01-namespace.yaml"
+kubectl apply --validate=false -f "${CM_BASE}/cert-manager.yaml"
 kubectl wait --timeout=5m --namespace=cert-manager --for=condition=Available deploy/cert-manager deploy/cert-manager-webhook
 cat ./cert-manager-issuer.yaml | envsubst | kubectl apply -f -
 
-# Collect metrics from nodes & objects
+# cluster metrics
 kubectl apply -f ./monitoring-kube-state-metrics.yaml
-
-# Export node metrics
 kubectl apply -f ./monitoring-node-exporter.yaml
 
 # Setup Prometheus
@@ -50,5 +45,4 @@ kubectl wait --timeout=5m --namespace=prometheus --for=condition=Available deplo
 
 # Setup Traefik
 cat ./traefik.yaml | envsubst | kubectl apply -f -
-create_config traefik config --from-file=traefik.toml=traefik-config.toml
 kubectl wait --timeout=5m --namespace=traefik --for=condition=Available deploy/traefik
